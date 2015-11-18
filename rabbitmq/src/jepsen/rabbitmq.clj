@@ -17,6 +17,7 @@
             [langohr.confirm       :as lco]
             [langohr.queue         :as lq]
             [langohr.exchange      :as le]
+            [langohr.tx            :as ltx]
             [langohr.basic         :as lb])
   (:import (com.rabbitmq.client AlreadyClosedException
                                 ShutdownSignalException)))
@@ -148,7 +149,7 @@
     (with-ch [ch conn]
       (case (:f op)
         :enqueue (do
-                   (lco/select ch) ; Use confirmation tracking
+                   (ltx/select ch) ; Use transactions
 
                    ; Empty string is the default exhange
                    (lb/publish ch "" queue
@@ -158,7 +159,7 @@
                                :persistent    true)
 
                    ; Block until message acknowledged
-                   (if (lco/wait-for-confirms ch 5000)
+                   (if (ltx/commit ch)
                      (assoc op :type :ok)
                      (assoc op :type :fail)))
 
